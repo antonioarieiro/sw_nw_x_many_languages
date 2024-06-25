@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabalho de BIOINFORMATICA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex flex-col gap-4 p-2 mt-4">
+    <h1 class="flex items-center justify-center text-bold font-bold text-[20px]">Alinhamento de sequencias com algumas Linguagens ruims (PHP NÃO ESTA INCLUSO)</h1>
+    <form id="alignmentForm" class="flex items-center flex-col justify-center ">
+      <div>
+        <label for="sequence1" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Primeira sequencia</label>
+        <input type="text" id="sequence1" name="sequence1" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="GATTACA" required />
+    </div>
+    <div>
+      <label for="sequence2" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Segunda sequencia</label>
+      <input type="text" id="sequence2" name="sequence2" required required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="GCATGCU" required />
+  </div>
+       
+  <button type="submit" class="mt-5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
+    </form>
+    <h2>Resultados</h2>
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('alignmentForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const sequence1 = document.getElementById('sequence1').value;
+            const sequence2 = document.getElementById('sequence2').value;
+
+            const response = await fetch('http://127.0.0.1:5000/align', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sequence1, sequence2 })
+            });
+
+            const results = await response.json();
+            document.getElementById('results').innerText = JSON.stringify(results, null, 2);
+        });
+    </script>
+</body>
+</html>
