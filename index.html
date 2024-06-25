@@ -7,7 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="flex flex-col gap-4 p-2 mt-4">
-    <h1 class="flex items-center justify-center text-bold font-bold text-[20px]">Alinhamento de sequencias com algumas Linguagens ruims (PHP NÃO ESTA INCLUSO)</h1>
+  <img class="h-[160px]" src="https://scontent-gru2-2.xx.fbcdn.net/v/t39.30808-6/326333766_1870251563340693_2903498988266222767_n.png?_nc_cat=110&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=q1R0ESqFxwsQ7kNvgEp7vxB&_nc_ht=scontent-gru2-2.xx&oh=00_AYC3_s70MRdLfnrCdpwrZlgwITPn87mMV8n9QnQPSPPNiA&oe=6680C560"/>
+    <h1 class="flex items-center justify-center text-bold font-bold text-[20px]">Alinhamento de sequencias com algumas Linguagens de nível duvidoso (PHP NÃO ESTA INCLUSO)</h1>
     <form id="alignmentForm" class="flex items-center flex-col justify-center ">
       <div>
         <label for="sequence1" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Primeira sequencia</label>
@@ -20,8 +21,10 @@
        
   <button type="submit" class="mt-5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
     </form>
-    <h2>Resultados</h2>
-    <div id="results"></div>
+    <div class="flex items-center justify-center mt-10">
+      <h2>Resultados</h2>
+    <div id="results" class="p-4"></div>
+    </div>
 
     <script>
         document.getElementById('alignmentForm').addEventListener('submit', async function(event) {
@@ -36,8 +39,65 @@
             });
 
             const results = await response.json();
-            document.getElementById('results').innerText = JSON.stringify(results, null, 2);
+            displayResults(results);
         });
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            const fastestResults = results.fastest_results;
+            const details = results.details;
+
+            for (const [algo, data] of Object.entries(fastestResults)) {
+                const algoDiv = document.createElement('div');
+                algoDiv.className = 'mb-4';
+
+                const algoHeader = document.createElement('h3');
+                algoHeader.className = 'font-bold';
+                algoHeader.innerText = `${algo} - Fastest Result`;
+                algoDiv.appendChild(algoHeader);
+
+                const algoDetails = document.createElement('p');
+                algoDetails.innerHTML = `
+                    <strong>Language:</strong> ${data.fastest_language} <br>
+                    <strong>Time:</strong> ${data.time.toFixed(6)} seconds <br>
+                    <strong>Score:</strong> ${data.score} <br>
+                    <strong>Gaps:</strong> ${data.gaps} <br>
+                    <strong>E-value:</strong> ${data.evalue} <br>
+                    <strong>Lines of Code:</strong> ${data.code_lines}
+                `;
+                algoDiv.appendChild(algoDetails);
+
+                resultsDiv.appendChild(algoDiv);
+            }
+
+            for (const [lang, algos] of Object.entries(details)) {
+                const langDiv = document.createElement('div');
+                langDiv.className = 'mb-4';
+
+                const langHeader = document.createElement('h3');
+                langHeader.className = 'font-bold';
+                langHeader.innerText = `Language: ${lang}`;
+                langDiv.appendChild(langHeader);
+
+                for (const [algo, data] of Object.entries(algos)) {
+                    const algoDetails = document.createElement('p');
+                    algoDetails.innerHTML = `
+                        <strong>Algorithm:</strong> ${algo} <br>
+                        <strong>Time:</strong> ${data.time.toFixed(6)} seconds <br>
+                        <strong>Score:</strong> ${data.score} <br>
+                        <strong>Gaps:</strong> ${data.gaps} <br>
+                        <strong>E-value:</strong> ${data.evalue} <br>
+                        <strong>Lines of Code:</strong> ${data.code_lines} <br>
+                        <strong>Output:</strong> <pre>${data.output}</pre>
+                    `;
+                    langDiv.appendChild(algoDetails);
+                }
+
+                resultsDiv.appendChild(langDiv);
+            }
+        }
     </script>
 </body>
 </html>

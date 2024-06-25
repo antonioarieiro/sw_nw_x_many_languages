@@ -9,7 +9,7 @@ CORS(app)  # Adiciona suporte a CORS para todas as rotas
 def run_script(script, args):
     start = time.time()
     try:
-        result = subprocess.run([script] + args, capture_output=True, text=True, check=True)
+        result = subprocess.run([script] + args, capture_output=True, text=True, check=True, shell=True)
         end = time.time()
         output = result.stdout.strip()
         time_spent = end - start
@@ -21,6 +21,18 @@ def run_script(script, args):
         end = time.time()
         return end - start, "Error: File not found"
 
+def parse_output(output):
+    # Dummy function to parse the script output, replace with actual parsing logic
+    try:
+        lines = output.split('\n')
+        score = int(lines[0].split()[1])
+        gaps = int(lines[1].split()[1])
+        evalue = float(lines[2].split()[1])
+        code_lines = int(lines[3].split()[1])
+        return score, gaps, evalue, code_lines
+    except (IndexError, ValueError):
+        return "N/A", "N/A", "N/A", "N/A"
+
 @app.route('/align', methods=['POST'])
 def align():
     data = request.json
@@ -29,64 +41,56 @@ def align():
 
     results = {}
 
-    # C
-    c_time, c_output = run_script('./needleman_wunsch_c', [seq1, seq2])
-    try:
-        c_score = int(c_output.split()[1])
-    except (ValueError, IndexError):
-        c_score = "N/A"
-    results['C'] = {
-        'Needleman-Wunsch': {'time': c_time, 'score': c_score, 'output': c_output}
+    scripts = {
+        'Needleman-Wunsch': {
+            'C': './needleman_wunsch_c',
+            'C++': './needleman_wunsch_cpp',
+            'C#': 'NeedlemanWunsch.exe',
+            'Java': 'NeedlemanWunsch',
+            'Perl': 'needleman_wunsch.pl'
+        },
+        'Smith-Waterman': {
+            'C': './smith_waterman_c',
+            'C++': './smith_waterman_cpp',
+            'C#': 'SmithWaterman.exe',
+            'Java': 'SmithWaterman',
+            'Perl': 'smith_waterman.pl'
+        }
     }
 
-    # C++
-    cpp_time, cpp_output = run_script('./needleman_wunsch_cpp', [seq1, seq2])
-    try:
-        cpp_score = int(cpp_output.split()[1])
-    except (ValueError, IndexError):
-        cpp_score = "N/A"
-    results['C++'] = {
-        'Needleman-Wunsch': {'time': cpp_time, 'score': cpp_score, 'output': cpp_output}
-    }
+    for algo in scripts:
+        for lang, script in scripts[algo].items():
+            if lang == 'C#':
+                time_spent, output = run_script('mono', [script, seq1, seq2])
+            else:
+                time_spent, output = run_script(script, [seq1, seq2])
+            score, gaps, evalue, code_lines = parse_output(output)
+            if lang not in results:
+                results[lang] = {}
+            results[lang][algo] = {
+                'time': time_spent,
+                'score': score,
+                'gaps': gaps,
+                'evalue': evalue,
+                'code_lines': code_lines,
+                'output': output
+            }
 
-    # C#
-    cs_time, cs_output = run_script('mono', ['NeedlemanWunsch.exe', seq1, seq2])
-    try:
-        cs_score = int(cs_output.split()[1])
-    except (ValueError, IndexError):
-        cs_score = "N/A"
-    results['C#'] = {
-        'Needleman-Wunsch': {'time': cs_time, 'score': cs_score, 'output': cs_output}
-    }
-
-    # Java
-    java_time, java_output = run_script('java', ['NeedlemanWunsch', seq1, seq2])
-    try:
-        java_score = int(java_output.split()[1])
-    except (ValueError, IndexError):
-        java_score = "N/A"
-    results['Java'] = {
-        'Needleman-Wunsch': {'time': java_time, 'score': java_score, 'output': java_output}
-    }
-
-    # Perl
-    perl_time, perl_output = run_script('perl', ['needleman_wunsch.pl', seq1, seq2])
-    try:
-        perl_score = int(perl_output.split()[1])
-    except (ValueError, IndexError):
-        perl_score = "N/A"
-    results['Perl'] = {
-        'Needleman-Wunsch': {'time': perl_time, 'score': perl_score, 'output': perl_output}
-    }
-
-    # Determine the fastest result
-    fastest_language = min(results, key=lambda k: results[k]['Needleman-Wunsch']['time'])
-    fastest_result = results[fastest_language]['Needleman-Wunsch']
+    # Determine the fastest result for each algorithm
+    fastest_results = {}
+    for algo in scripts:
+        fastest_language = min(results, key=lambda k: results[k][algo]['time'])
+        fastest_results[algo] = {
+            'fastest_language': fastest_language,
+            'time': results[fastest_language][algo]['time'],
+            'score': results[fastest_language][algo]['score'],
+            'gaps': results[fastest_language][algo]['gaps'],
+            'evalue': results[fastest_language][algo]['evalue'],
+            'code_lines': results[fastest_language][algo]['code_lines']
+        }
 
     return jsonify({
-        'fastest_language': fastest_language,
-        'time': fastest_result['time'],
-        'score': fastest_result['score'],
+        'fastest_results': fastest_results,
         'details': results
     })
 
