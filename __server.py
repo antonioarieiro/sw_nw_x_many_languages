@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import time
 import subprocess
-from algorithms import needleman_wunsch, smith_waterman
 
 app = Flask(__name__)
 CORS(app)
@@ -22,6 +21,18 @@ def run_script(script, args):
         end = time.time()
         return end - start, "Error: File not found"
 
+def parse_output(output):
+
+    try:
+        lines = output.split('\n')
+        score = int(lines[0].split()[1])
+        gaps = int(lines[1].split()[1])
+        evalue = float(lines[2].split()[1])
+        code_lines = int(lines[3].split()[1])
+        return score, gaps, evalue, code_lines
+    except (IndexError, ValueError):
+        return "N/A", "N/A", "N/A", "N/A"
+
 @app.route('/align', methods=['POST'])
 def align():
     data = request.json
@@ -29,28 +40,6 @@ def align():
     seq2 = data['sequence2']
 
     results = {}
-
-    code_lines = {
-        'Needleman-Wunsch': {
-            'C': 59,
-            'C++': 48,
-            'C#': 47,
-            'Java': 52,
-            'Perl': 43
-        },
-        'Smith-Waterman': {
-            'C': 59,
-            'C++': 48,
-            'C#': 47,
-            'Java': 52,
-            'Perl': 43
-        }
-    }
-
-    algorithms = {
-        'Needleman-Wunsch': needleman_wunsch,
-        'Smith-Waterman': smith_waterman
-    }
 
     scripts = {
         'Needleman-Wunsch': {
@@ -69,20 +58,21 @@ def align():
         }
     }
 
-    for algo_name, algo_func in algorithms.items():
-        python_score, python_gaps = algo_func(seq1, seq2)
-        for lang, script in scripts[algo_name].items():
+    for algo in scripts:
+        for lang, script in scripts[algo].items():
             if lang == 'C#':
                 time_spent, output = run_script('mono', [script, seq1, seq2])
             else:
                 time_spent, output = run_script(script, [seq1, seq2])
+            score, gaps, evalue, code_lines = parse_output(output)
             if lang not in results:
                 results[lang] = {}
-            results[lang][algo_name] = {
+            results[lang][algo] = {
                 'time': time_spent,
-                'score': python_score,
-                'gaps': python_gaps,
-                'code_lines': code_lines[algo_name][lang],
+                'score': score,
+                'gaps': gaps,
+                'evalue': evalue,
+                'code_lines': code_lines,
                 'output': output
             }
 
@@ -94,6 +84,7 @@ def align():
             'time': results[fastest_language][algo]['time'],
             'score': results[fastest_language][algo]['score'],
             'gaps': results[fastest_language][algo]['gaps'],
+            'evalue': results[fastest_language][algo]['evalue'],
             'code_lines': results[fastest_language][algo]['code_lines']
         }
 
