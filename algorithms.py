@@ -1,5 +1,4 @@
 # algorithms.py
-
 def needleman_wunsch(seq1, seq2):
     match_award = 1
     mismatch_penalty = -1
@@ -61,7 +60,6 @@ def needleman_wunsch(seq1, seq2):
     gaps = align1.count('-') + align2.count('-')
 
     return score[n][m], gaps
-
 def smith_waterman(seq1, seq2):
     match_award = 2
     mismatch_penalty = -1

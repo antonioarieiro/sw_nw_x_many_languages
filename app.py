@@ -3,6 +3,7 @@ from flask_cors import CORS
 import time
 import subprocess
 from algorithms import needleman_wunsch, smith_waterman
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -83,24 +84,15 @@ def align():
                 'score': python_score,
                 'gaps': python_gaps,
                 'code_lines': code_lines[algo_name][lang],
-                'output': output
+                'output': output,
+                'is_fastest': False
             }
 
-    fastest_results = {}
     for algo in scripts:
         fastest_language = min(results, key=lambda k: results[k][algo]['time'])
-        fastest_results[algo] = {
-            'fastest_language': fastest_language,
-            'time': results[fastest_language][algo]['time'],
-            'score': results[fastest_language][algo]['score'],
-            'gaps': results[fastest_language][algo]['gaps'],
-            'code_lines': results[fastest_language][algo]['code_lines']
-        }
+        results[fastest_language][algo]['is_fastest'] = True
 
-    return jsonify({
-        'fastest_results': fastest_results,
-        'details': results
-    })
+    return jsonify(results)
 
 if __name__ == '__main__':
     app.run(debug=True)
